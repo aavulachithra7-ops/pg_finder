@@ -69,23 +69,40 @@ export function BookingProvider({ children }) {
     setBookings(updatedBookings);
     localStorage.setItem('pgBookings', JSON.stringify(updatedBookings));
 
+    let resultRef = id;
+
     // Also save to Supabase (best-effort — won't crash if not configured)
     try {
       const currentUser = JSON.parse(localStorage.getItem('pg_current_user') || 'null');
-      await createBooking({
-        pg_id: bookingData.pgId || null,
-        user_id: currentUser?.id || null,
-        pg_name: bookingData.pgName,
-        user_name: bookingData.fullName || bookingData.userName,
-        user_email: bookingData.email || bookingData.userEmail,
-        user_phone: bookingData.mobile || bookingData.userPhone,
-        move_in_date: bookingData.checkInDate || bookingData.moveInDate,
-        duration: Number(bookingData.duration) || null,
-        room_type: bookingData.roomType,
-        special_requests: bookingData.notes || bookingData.specialRequests,
-        status: 'pending',
+      
+      // Ensure the user_id is a valid UUID to avoid Postgres foreign key type constraint failures
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const dbUserId = (currentUser?.id && uuidRegex.test(currentUser.id)) ? currentUser.id : null;
+
+      const saved = await createBooking({
+        full_name:       bookingData.fullName || '',
+        age:             bookingData.age ? Number(bookingData.age) : null,
+        mobile:          bookingData.mobile || '',
+        email:           bookingData.email || null,
+        gender:          bookingData.gender || null,
+        aadhar:          bookingData.aadhar || null,
+        pg_id:           bookingData.pgId || null,
+        pg_name:         bookingData.pgName || null,
+        room_number:     bookingData.roomNumber ? Number(bookingData.roomNumber) : null,
+        room_type:       bookingData.roomType || null,
+        rent:            bookingData.rent ? Number(bookingData.rent) : null,
+        check_in_date:   bookingData.checkInDate || null,
+        duration:        bookingData.duration ? Number(bookingData.duration) : null,
+        occupants:       bookingData.occupants ? Number(bookingData.occupants) : null,
+        food_preference: bookingData.foodPreference || null,
+        notes:           bookingData.notes || null,
+        user_id:         dbUserId,
+        status:          'pending',
       });
-      console.log('✅ Booking saved to Supabase:', id);
+      if (saved?.booking_ref) {
+        resultRef = saved.booking_ref;
+      }
+      console.log('✅ Booking saved to Supabase:', resultRef);
     } catch (err) {
       console.warn('⚠️ Could not save to Supabase (using localStorage only):', err.message);
     }
@@ -103,7 +120,7 @@ export function BookingProvider({ children }) {
     }
 
     setSelectedRoom(null);
-    return id;
+    return resultRef;
   }, [bookings]);
 
   return (

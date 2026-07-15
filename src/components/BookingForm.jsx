@@ -71,47 +71,6 @@ export default function BookingForm({ pg }) {
     return Object.keys(errs).length === 0;
   };
 
-  // ── Save booking to Supabase ──────────────────────────────────────────────
-  const saveToSupabase = async (payload) => {
-    if (!isSupabaseConfigured) return null;
-
-    // Get current logged-in user (if any)
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const record = {
-      full_name:       payload.fullName,
-      age:             Number(payload.age),
-      mobile:          payload.mobile,
-      email:           payload.email || null,
-      gender:          payload.gender,
-      aadhar:          payload.aadhar,
-      pg_id:           payload.pgId || null,
-      pg_name:         payload.pgName,
-      room_number:     payload.roomNumber ? Number(payload.roomNumber) : null,
-      room_type:       payload.roomType,
-      rent:            payload.rent || null,
-      check_in_date:   payload.checkInDate,
-      duration:        Number(payload.duration),
-      occupants:       Number(payload.occupants),
-      food_preference: payload.foodPreference,
-      notes:           payload.notes || null,
-      user_id:         user?.id || null,
-      status:          'pending',
-    };
-
-    const { data, error } = await supabase
-      .from('bookings')
-      .insert([record])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Supabase booking insert error:', error);
-      throw error;
-    }
-    return data;
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -120,19 +79,14 @@ export default function BookingForm({ pg }) {
     setSaveError('');
 
     const processBooking = async (bookingPayload) => {
-      // Local context booking (always runs)
-      const localId = addBooking(bookingPayload);
-      setBookingId(localId);
-
-      // Supabase save
       try {
-        const saved = await saveToSupabase(bookingPayload);
-        if (saved?.booking_ref) setBookingRef(saved.booking_ref);
-        else if (saved?.id) setBookingRef(`BK-${saved.id}`);
+        // addBooking handles saving to local state AND Supabase, returning the booking reference/ID
+        const ref = await addBooking(bookingPayload);
+        setBookingRef(ref || 'BK-' + Math.floor(Math.random() * 100000));
+        setBookingId(ref);
       } catch (err) {
         setSaveError('⚠️ Saved locally but failed to sync: ' + err.message);
       }
-
       setSubmitted(true);
       setIsSubmitting(false);
     };
