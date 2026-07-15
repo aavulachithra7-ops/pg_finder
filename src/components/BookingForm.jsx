@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useBooking } from '../context/BookingContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function BookingForm({ pg }) {
   const { selectedRoom, addBooking, closeBookingForm } = useBooking();
   const [submitted, setSubmitted] = useState(false);
   const [bookingId, setBookingId] = useState('');
+  const [bookingRef, setBookingRef] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const [form, setForm] = useState({
     fullName: '',
@@ -63,10 +66,50 @@ export default function BookingForm({ pg }) {
     }
     if (!form.duration) errs.duration = 'Duration of stay is required';
     if (!form.foodPreference) errs.foodPreference = 'Please select food preference';
-    // photo optional but if present must be image
     if (form.photo && !form.photo.type?.startsWith('image/')) errs.photo = 'Please upload a valid image file';
     setErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  // ── Save booking to Supabase ──────────────────────────────────────────────
+  const saveToSupabase = async (payload) => {
+    if (!isSupabaseConfigured) return null;
+
+    // Get current logged-in user (if any)
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const record = {
+      full_name:       payload.fullName,
+      age:             Number(payload.age),
+      mobile:          payload.mobile,
+      email:           payload.email || null,
+      gender:          payload.gender,
+      aadhar:          payload.aadhar,
+      pg_id:           payload.pgId || null,
+      pg_name:         payload.pgName,
+      room_number:     payload.roomNumber ? Number(payload.roomNumber) : null,
+      room_type:       payload.roomType,
+      rent:            payload.rent || null,
+      check_in_date:   payload.checkInDate,
+      duration:        Number(payload.duration),
+      occupants:       Number(payload.occupants),
+      food_preference: payload.foodPreference,
+      notes:           payload.notes || null,
+      user_id:         user?.id || null,
+      status:          'pending',
+    };
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert([record])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase booking insert error:', error);
+      throw error;
+    }
+    return data;
   };
 
   const handleSubmit = (e) => {
@@ -74,36 +117,45 @@ export default function BookingForm({ pg }) {
     if (!validate()) return;
     if (isSubmitting) return;
     setIsSubmitting(true);
+    setSaveError('');
 
-    // Simulate brief processing
-    setTimeout(() => {
-      const bookingPayload = {
-        ...form,
-        pgId: pg?.id,
-        pgName: pg?.name,
-        roomNumber: selectedRoom?.roomNumber || parseInt(form.roomNumber) || null,
-        rent: selectedRoom?.rent || null,
-      };
+    const processBooking = async (bookingPayload) => {
+      // Local context booking (always runs)
+      const localId = addBooking(bookingPayload);
+      setBookingId(localId);
 
-      // If photo file present, convert to data URL for storage
-      if (form.photo) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          bookingPayload.photoData = reader.result;
-          const id = addBooking(bookingPayload);
-          setBookingId(id);
-          setSubmitted(true);
-          setIsSubmitting(false);
-        };
-        reader.readAsDataURL(form.photo);
-        return;
+      // Supabase save
+      try {
+        const saved = await saveToSupabase(bookingPayload);
+        if (saved?.booking_ref) setBookingRef(saved.booking_ref);
+        else if (saved?.id) setBookingRef(`BK-${saved.id}`);
+      } catch (err) {
+        setSaveError('⚠️ Saved locally but failed to sync: ' + err.message);
       }
 
-      const id = addBooking(bookingPayload);
-      setBookingId(id);
       setSubmitted(true);
       setIsSubmitting(false);
-    }, 800);
+    };
+
+    const bookingPayload = {
+      ...form,
+      pgId: pg?.id,
+      pgName: pg?.name,
+      roomNumber: selectedRoom?.roomNumber || parseInt(form.roomNumber) || null,
+      rent: selectedRoom?.rent || null,
+    };
+
+    if (form.photo) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        bookingPayload.photoData = reader.result;
+        processBooking(bookingPayload);
+      };
+      reader.readAsDataURL(form.photo);
+      return;
+    }
+
+    processBooking(bookingPayload);
   };
 
   const handleChange = (field, value) => {
@@ -118,7 +170,6 @@ export default function BookingForm({ pg }) {
     if (errors.photo) setErrors(prev => { const n = { ...prev }; delete n.photo; return n; });
   };
 
-  // Get today's date as min for date input
   const today = new Date().toISOString().split('T')[0];
 
   if (submitted) {
@@ -130,10 +181,18 @@ export default function BookingForm({ pg }) {
             <h2>Booking Submitted!</h2>
             <p>Your booking request has been submitted successfully.</p>
             <div className="booking-id-display">
-              <span className="booking-id-label">Booking ID</span>
-              <span className="booking-id-value">{bookingId}</span>
+              <span className="booking-id-label">Booking Ref</span>
+              <span className="booking-id-value">{bookingRef || bookingId}</span>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '16px' }}>
+            {isSupabaseConfigured && !saveError && (
+              <p style={{ fontSize: '13px', color: '#22c55e', marginTop: '10px', fontWeight: 500 }}>
+                ✅ Saved to database successfully
+              </p>
+            )}
+            {saveError && (
+              <p style={{ fontSize: '13px', color: '#f59e0b', marginTop: '10px' }}>{saveError}</p>
+            )}
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '12px' }}>
               Our team will contact you shortly to confirm your booking.
             </p>
             <button className="btn btn-primary" onClick={closeBookingForm} style={{ marginTop: '24px', width: '100%' }}>
@@ -153,8 +212,14 @@ export default function BookingForm({ pg }) {
           <button className="booking-form-close" onClick={closeBookingForm}>✕</button>
         </div>
 
+        {isSupabaseConfigured && (
+          <div style={{ fontSize: '12px', color: '#22c55e', textAlign: 'center', padding: '4px 0 8px', fontWeight: 500 }}>
+            🔒 Connected to Supabase — your booking will be saved securely
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="booking-form-body">
-          {/* Row 1: Name & Mobile */}
+          {/* Row 1: Name & Age */}
           <div className="booking-form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="bf-name">Full Name *</label>
@@ -182,21 +247,29 @@ export default function BookingForm({ pg }) {
               {errors.mobile && <span className="field-error">{errors.mobile}</span>}
             </div>
             <div className="form-group">
-              <label className="form-label">Gender *</label>
-              <div className="booking-chips">
-                {['Male', 'Female', 'Other'].map(g => (
-                  <button key={g} type="button"
-                    className={`booking-chip ${form.gender === g ? 'active' : ''}`}
-                    onClick={() => handleChange('gender', g)}>
-                    {g === 'Male' ? '👨' : g === 'Female' ? '👩' : '👥'} {g}
-                  </button>
-                ))}
-              </div>
-              {errors.gender && <span className="field-error">{errors.gender}</span>}
+              <label className="form-label" htmlFor="bf-email">Email Address</label>
+              <input id="bf-email" className="form-input"
+                type="email" placeholder="you@example.com" value={form.email}
+                onChange={e => handleChange('email', e.target.value)} />
             </div>
           </div>
 
-          {/* Row 3: PG Name (auto-filled) & Room Number */}
+          {/* Row 3: Gender */}
+          <div className="form-group">
+            <label className="form-label">Gender *</label>
+            <div className="booking-chips">
+              {['Male', 'Female', 'Other'].map(g => (
+                <button key={g} type="button"
+                  className={`booking-chip ${form.gender === g ? 'active' : ''}`}
+                  onClick={() => handleChange('gender', g)}>
+                  {g === 'Male' ? '👨' : g === 'Female' ? '👩' : '👥'} {g}
+                </button>
+              ))}
+            </div>
+            {errors.gender && <span className="field-error">{errors.gender}</span>}
+          </div>
+
+          {/* Row 4: PG Name & Room Number */}
           <div className="booking-form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="bf-pg">Preferred PG</label>
@@ -211,7 +284,7 @@ export default function BookingForm({ pg }) {
             </div>
           </div>
 
-          {/* Row: Aadhaar & Photo Upload */}
+          {/* Row 5: Aadhaar & Photo Upload */}
           <div className="booking-form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="bf-aadhar">Aadhaar Number *</label>
@@ -233,7 +306,7 @@ export default function BookingForm({ pg }) {
             </div>
           </div>
 
-          {/* Row 4: Room Type */}
+          {/* Room Type */}
           <div className="form-group">
             <label className="form-label">Room Type *</label>
             <div className="booking-chips">
@@ -253,7 +326,7 @@ export default function BookingForm({ pg }) {
             {errors.roomType && <span className="field-error">{errors.roomType}</span>}
           </div>
 
-          {/* Row 5: Check-in & Duration */}
+          {/* Row 6: Check-in & Duration */}
           <div className="booking-form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="bf-checkin">Check-in Date *</label>
@@ -277,7 +350,7 @@ export default function BookingForm({ pg }) {
             </div>
           </div>
 
-          {/* Row 6: Occupants & Food */}
+          {/* Row 7: Occupants & Food */}
           <div className="booking-form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="bf-occupants">Number of Occupants</label>
@@ -322,7 +395,7 @@ export default function BookingForm({ pg }) {
               {isSubmitting ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                   <span className="spinner" />
-                  Processing...
+                  Saving to Database...
                 </span>
               ) : '🚀 Book Now'}
             </button>
@@ -332,7 +405,3 @@ export default function BookingForm({ pg }) {
     </div>
   );
 }
-
-
-
-

@@ -86,6 +86,29 @@ function notifyAuthListeners(event, session) {
   });
 }
 
+// ─── USER LOGIN RECORDER ──────────────────────────────────────────────────────
+
+/**
+ * Insert a row into user_logins table to track login activity.
+ * Called after every successful sign-up or sign-in.
+ */
+async function recordUserLogin({ userId, name, email, role, provider }) {
+  if (!isSupabaseConfigured) return;
+  try {
+    await supabase.from('user_logins').insert([{
+      user_id:  userId,
+      name:     name || null,
+      email:    email,
+      role:     role || 'tenant',
+      provider: provider || 'email',
+      login_at: new Date().toISOString(),
+    }]);
+  } catch (err) {
+    // Non-fatal – just log
+    console.warn('Could not record login event:', err.message);
+  }
+}
+
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 
 /** Sign up with email and password */
@@ -162,6 +185,15 @@ export async function signUp({ email, password, name, role }) {
       email,
       role,
     });
+
+    // Record signup in user_logins
+    await recordUserLogin({
+      userId:   data.user.id,
+      name,
+      email,
+      role,
+      provider: 'email',
+    });
   }
   return data;
 }
@@ -222,6 +254,17 @@ export async function signIn({ email, password }) {
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
+
+  // Record login in user_logins
+  if (data.user) {
+    await recordUserLogin({
+      userId:   data.user.id,
+      name:     data.user.user_metadata?.name || email.split('@')[0],
+      email,
+      role:     data.user.user_metadata?.role || 'tenant',
+      provider: 'email',
+    });
+  }
   return data;
 }
 
@@ -294,6 +337,7 @@ export async function signInWithGoogle() {
     },
   });
   if (error) throw error;
+  // Note: For OAuth redirects, login recording happens in onAuthChange listener
   return data;
 }
 
@@ -361,6 +405,7 @@ export async function signInWithFacebook() {
     },
   });
   if (error) throw error;
+  // Note: For OAuth redirects, login recording happens in onAuthChange listener
   return data;
 }
 
@@ -507,7 +552,22 @@ export function onAuthChange(callback) {
     };
   }
 
-  return supabase.auth.onAuthStateChange((event, session) => {
+  return supabase.auth.onAuthStateChange(async (event, session) => {
+    // Record OAuth logins (Google/Facebook) when user lands back after redirect
+    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+      const u = session.user;
+      const provider = u.app_metadata?.provider || 'email';
+      if (provider !== 'email') {
+        // OAuth providers — record the login event
+        await recordUserLogin({
+          userId:   u.id,
+          name:     u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0],
+          email:    u.email,
+          role:     u.user_metadata?.role || 'tenant',
+          provider,
+        });
+      }
+    }
     callback(event, session);
   });
 }
