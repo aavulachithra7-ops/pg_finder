@@ -169,9 +169,9 @@ on conflict do nothing;
 
 
 -- =============================================
--- 6. OWNERS TABLE
+-- 6. OWNERS LOGIN TABLE
 -- =============================================
-create table if not exists owners (
+create table if not exists owners_login (
   id bigserial primary key,
   pg_name text unique not null,
   password_hash text not null,
@@ -182,10 +182,10 @@ create table if not exists owners (
   last_login timestamptz
 );
 
-alter table owners enable row level security;
-create policy "Anyone can read owners" on owners for select using (true);
-create policy "Anyone can insert owners" on owners for insert with check (true);
-create policy "Owners can update their own profile" on owners for update using (true);
+alter table owners_login enable row level security;
+create policy "Anyone can read owners_login" on owners_login for select using (true);
+create policy "Anyone can insert owners_login" on owners_login for insert with check (true);
+create policy "Owners can update their own profile" on owners_login for update using (true);
 
 
 -- =============================================

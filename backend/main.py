@@ -162,11 +162,11 @@ def seed_supabase_owners():
     if not supabase:
         return
     try:
-        # Check if owners table exists and has rows
-        res = supabase.from_("owners").select("count", count="exact").execute()
+        # Check if owners_login table exists and has rows
+        res = supabase.from_("owners_login").select("count", count="exact").execute()
         if res.count == 0:
             default_hash = hash_password("password123")
-            supabase.from_("owners").insert([
+            supabase.from_("owners_login").insert([
                 {
                     "pg_name": "Comfort Zone PG",
                     "password_hash": default_hash,
@@ -182,7 +182,7 @@ def seed_supabase_owners():
                     "phone_number": "9876543211"
                 }
             ]).execute()
-            print("Seeded owners table in Supabase!")
+            print("Seeded owners_login table in Supabase!")
     except Exception as e:
         print(f"Skipping Supabase owner seeding: {e}")
 
@@ -237,6 +237,13 @@ def get_current_owner(authorization: str = Header(...)) -> str:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid session token.")
 
+def create_jwt_token(pg_name: str) -> str:
+    payload = {
+        "sub": pg_name,
+        "exp": datetime.now(timezone.utc) + timedelta(days=7)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
 # ─── DATA MODELS ──────────────────────────────────────────────────────────────
 class OwnerLoginRequest(BaseModel):
     pg_name: str
@@ -282,11 +289,11 @@ def owner_signup(req: OwnerRegisterRequest):
     if supabase:
         try:
             # Check if pg_name exists
-            check = supabase.from_("owners").select("*").eq("pg_name", req.pg_name).execute()
+            check = supabase.from_("owners_login").select("*").eq("pg_name", req.pg_name).execute()
             if len(check.data) > 0:
                 raise HTTPException(status_code=400, detail="Owner/PG Name already registered.")
             
-            res = supabase.from_("owners").insert([{
+            res = supabase.from_("owners_login").insert([{
                 "pg_name": req.pg_name,
                 "password_hash": hashed,
                 "owner_name": req.owner_name,
@@ -325,7 +332,7 @@ def owner_login(req: OwnerLoginRequest):
     owner_profile = None
     if supabase:
         try:
-            res = supabase.from_("owners").select("*").eq("pg_name", req.pg_name).execute()
+            res = supabase.from_("owners_login").select("*").eq("pg_name", req.pg_name).execute()
             if len(res.data) == 0:
                 register_failed_attempt(req.pg_name)
                 raise HTTPException(status_code=404, detail="PG not found.")
@@ -336,7 +343,7 @@ def owner_login(req: OwnerLoginRequest):
                 raise HTTPException(status_code=400, detail="Invalid PG Name or Password.")
             
             # Update last login
-            supabase.from_("owners").update({"last_login": datetime.now(timezone.utc).isoformat()}).eq("id", owner_profile["id"]).execute()
+            supabase.from_("owners_login").update({"last_login": datetime.now(timezone.utc).isoformat()}).eq("id", owner_profile["id"]).execute()
         except HTTPException as he:
             raise he
         except Exception as e:
@@ -380,6 +387,8 @@ def get_owner_dashboard(pg_name: str = Depends(get_current_owner)):
                     "rent": 8500,
                     "gender": "Any"
                 }]).execute()
+                if not pg_insert.data:
+                    raise Exception("Failed to auto-create PG listing. Supabase Row Level Security (RLS) policies may be blocking the insert.")
                 pg_info = pg_insert.data[0]
             else:
                 pg_info = pg_res.data[0]
@@ -423,6 +432,8 @@ def get_owner_dashboard(pg_name: str = Depends(get_current_owner)):
                 "bookings": bookings
             }
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             raise HTTPException(status_code=500, detail=str(e))
     else:
         db = read_mock_db()
@@ -506,8 +517,12 @@ def update_owner_pg(req: PGUpdateRequest, pg_name: str = Depends(get_current_own
                 update_data["image"] = req.image
                 
             res = supabase.from_("pg_listings").update(update_data).eq("id", pg_id).execute()
+            if not res.data:
+                raise Exception("Failed to update PG details. Supabase Row Level Security (RLS) policies may be blocking the update.")
             return {"message": "PG details updated successfully", "data": res.data[0]}
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             raise HTTPException(status_code=500, detail=str(e))
     else:
         db = read_mock_db()
@@ -696,14 +711,14 @@ def update_booking_status(booking_id: int, req: BookingStatusUpdateRequest, pg_n
 def change_owner_password(req: ChangePasswordRequest, pg_name: str = Depends(get_current_owner)):
     if supabase:
         try:
-            res = supabase.from_("owners").select("*").eq("pg_name", pg_name).execute()
+            res = supabase.from_("owners_login").select("*").eq("pg_name", pg_name).execute()
             owner = res.data[0]
             
             if not verify_password(req.old_password, owner["password_hash"]):
                 raise HTTPException(status_code=400, detail="Invalid old password.")
                 
             new_hash = hash_password(req.new_password)
-            supabase.from_("owners").update({"password_hash": new_hash}).eq("id", owner["id"]).execute()
+            supabase.from_("owners_login").update({"password_hash": new_hash}).eq("id", owner["id"]).execute()
             return {"message": "Password changed successfully"}
         except HTTPException as he:
             raise he

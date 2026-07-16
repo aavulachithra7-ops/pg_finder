@@ -44,7 +44,7 @@ export default function Login({ onNavigate, onLogin }) {
                 pg_name: form.email, // Bind PG name input to form.email state variable
                 password: form.password,
                 owner_name: form.name,
-                email: `owner-${form.email.replace(/\s+/g, '').toLowerCase()}@example.com`
+                email: `owner-${(form.email.replace(/[^a-zA-Z0-9]/g, '') || Math.random().toString(36).substring(2, 7)).toLowerCase()}@example.com`
               })
             });
             
@@ -53,7 +53,17 @@ export default function Login({ onNavigate, onLogin }) {
               setMode('login');
             } else {
               const err = await response.json();
-              throw new Error(err.detail || 'Owner registration failed.');
+              let errorMsg = 'Owner registration failed.';
+              if (err && err.detail) {
+                if (typeof err.detail === 'string') {
+                  errorMsg = err.detail;
+                } else if (Array.isArray(err.detail)) {
+                  errorMsg = err.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+                } else if (typeof err.detail === 'object') {
+                  errorMsg = err.detail.message || JSON.stringify(err.detail);
+                }
+              }
+              throw new Error(errorMsg);
             }
           } catch (err) {
             // Local Storage Mock fallback if backend is down
@@ -66,7 +76,7 @@ export default function Login({ onNavigate, onLogin }) {
                 pg_name: form.email,
                 password: form.password,
                 owner_name: form.name,
-                email: `owner-${form.email.replace(/\s+/g, '').toLowerCase()}@example.com`
+                email: `owner-${(form.email.replace(/[^a-zA-Z0-9]/g, '') || Math.random().toString(36).substring(2, 7)).toLowerCase()}@example.com`
               };
               mockOwners.push(newOwner);
               localStorage.setItem('pg_mock_owners', JSON.stringify(mockOwners));
