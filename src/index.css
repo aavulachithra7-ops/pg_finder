@@ -1293,8 +1293,39 @@ body {
   .team-grid { grid-template-columns: 1fr 1fr; }
 }
 
-
-
-
-
-
+/* ENVIRONMENT WARNING BANNER */
+.env-warning-banner {
+  background: linear-gradient(135deg, #b91c1c 0%, #d97706 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+  z-index: 10001;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.env-warning-banner code {
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+}
+.has-env-warning {
+  padding-top: 40px;
+}
+.has-env-warning .navbar {
+  top: 40px;
+}

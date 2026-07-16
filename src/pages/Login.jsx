@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { signIn, signUp, signInWithGoogle, signInWithFacebook, onAuthChange, loginOwner } from '../lib/api';
+import { signIn, signUp, signInWithGoogle, signInWithFacebook, onAuthChange, loginOwner, BACKEND_URL } from '../lib/api';
 
 export default function Login({ onNavigate, onLogin }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -37,7 +37,7 @@ export default function Login({ onNavigate, onLogin }) {
         if (mode === 'signup') {
           // Signup Owner via backend or offline mock
           try {
-            const response = await fetch('http://localhost:8000/api/owner/signup', {
+            const response = await fetch(`${BACKEND_URL}/api/owner/signup`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

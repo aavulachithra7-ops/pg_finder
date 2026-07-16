@@ -25,8 +25,8 @@ app.add_middleware(
 )
 
 # ─── DATABASE INITIALIZATION ──────────────────────────────────────────────────
-SUPABASE_URL = os.environ.get("VITE_SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("VITE_SUPABASE_ANON_KEY")
+SUPABASE_URL = os.environ.get("VITE_SUPABASE_URL") or os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("VITE_SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
 supabase: Optional[Client] = None
 if SUPABASE_URL and SUPABASE_KEY and "your-project-id" not in SUPABASE_URL:

@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import About from './pages/About';
 import OwnerDashboard from './pages/OwnerDashboard';
 import { onAuthChange, signOut } from './lib/api';
+import { isSupabaseConfigured } from './lib/supabase';
 import './index.css';
 
 export default function App() {
@@ -107,7 +108,12 @@ export default function App() {
 
   return (
     <BookingProvider>
-      <div>
+      <div className={!isSupabaseConfigured ? 'has-env-warning' : ''}>
+        {!isSupabaseConfigured && (
+          <div className="env-warning-banner">
+            ⚠️ Database not connected. Falling back to local mock storage. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> env variables on deployment.
+          </div>
+        )}
         <Navbar currentPage={currentPage} onNavigate={handleNavigate} user={user} onLogout={handleLogout} />
 
         <main>

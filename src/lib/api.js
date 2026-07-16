@@ -875,7 +875,7 @@ export async function addReview({ pgId, userId, rating, text, author }) {
 
 // ─── OWNER DASHBOARD & AUTHENTICATION ──────────────────────────────────────────
 
-const BACKEND_URL = 'http://localhost:8000';
+export const BACKEND_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 function getOwnerHeaders() {
   const token = localStorage.getItem('owner_token');
