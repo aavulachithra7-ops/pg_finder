@@ -4,12 +4,14 @@ import ReviewCard from '../components/ReviewCard';
 import WeeklyMenu from '../components/WeeklyMenu';
 import BookingForm from '../components/BookingForm';
 import { useBooking } from '../context/BookingContext';
+import { amenityIcons } from '../data/pgData';
 
 export default function PGDetails({ pg, onBack }) {
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const { selectedRoom, openBookingForm, showBookingForm, bookingPG } = useBooking();
   const totalAvailable = Object.values(pg.floorAvailability).reduce((s, v) => s + v, 0);
+  const [activePhoto, setActivePhoto] = useState(null);
 
   const triggerToast = (msg) => {
     setToastMsg(msg);
@@ -50,20 +52,12 @@ export default function PGDetails({ pg, onBack }) {
             {/* Glassmorphism Amenities + Price Bar */}
             <div className="hero-glass-bar">
               <div className="hero-amenities-list">
-                {pg.amenities.map((amenity) => {
-                  const iconMap = {
-                    'WiFi': '📶', 'Lift': '🛗', 'Generator': '⚡', 'Food': '🍽️',
-                    'Gym': '🏋️', 'Laundry': '🧺', 'CCTV': '📹', 'Hot Water': '🚿',
-                    'AC': '❄️', 'Parking': '🅿️', 'TV': '📺', 'Housekeeping': '🧹',
-                    'Security': '🔒', 'Power Backup': '🔋', 'Swimming Pool': '🏊',
-                  };
-                  return (
-                    <span key={amenity} className="hero-amenity-chip">
-                      <span className="hero-amenity-icon">{iconMap[amenity] || '✦'}</span>
-                      {amenity}
-                    </span>
-                  );
-                })}
+                {pg.amenities.map((amenity) => (
+                  <span key={amenity} className="hero-amenity-chip">
+                    <span className="hero-amenity-icon">{amenityIcons[amenity] || '✦'}</span>
+                    {amenity}
+                  </span>
+                ))}
               </div>
               <div className="hero-price-badge">
                 <span className="hero-price-from">Starting from</span>
@@ -91,23 +85,105 @@ export default function PGDetails({ pg, onBack }) {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '24px' }}>
                   {[
-                    { label: 'Location', value: pg.location, icon: '📍' },
+                    { 
+                      label: 'Location', 
+                      value: pg.locationDetail || pg.location, 
+                      icon: '📍',
+                      isLink: true,
+                      linkUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pg.name + ' ' + (pg.locationDetail || pg.location) + ' Bangalore')}`
+                    },
                     { label: 'Total Floors', value: `${pg.totalFloors} Floors`, icon: '🏢' },
                     { label: 'Rooms Available', value: `${totalAvailable} Rooms`, icon: '🚪' },
-                  ].map((item) => (
-                    <div key={item.label} style={{
-                      padding: '16px',
-                      borderRadius: '12px',
-                      background: 'var(--bg-glass)',
-                      border: '1px solid var(--border)',
-                      textAlign: 'center',
-                    }}>
-                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>{item.icon}</div>
-                      <div style={{ fontSize: '15px', fontWeight: 700 }}>{item.value}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{item.label}</div>
-                    </div>
-                  ))}
+                  ].map((item) => {
+                    const cardContent = (
+                      <>
+                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>{item.icon}</div>
+                        <div style={{ fontSize: '15px', fontWeight: 700 }}>{item.value}</div>
+                        <div style={{ fontSize: '12px', color: item.isLink ? 'var(--accent)' : 'var(--text-muted)', marginTop: '2px', textDecoration: item.isLink ? 'underline' : 'none' }}>
+                          {item.isLink ? '🗺️ View on Maps' : item.label}
+                        </div>
+                      </>
+                    );
+
+                    if (item.isLink) {
+                      return (
+                        <a
+                          key={item.label}
+                          href={item.linkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="location-card-link"
+                          style={{
+                            display: 'block',
+                            textDecoration: 'none',
+                            color: 'inherit',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            background: 'var(--bg-glass)',
+                            border: '1px solid var(--border)',
+                            textAlign: 'center',
+                            transition: 'all 0.2s ease',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {cardContent}
+                        </a>
+                      );
+                    }
+
+                    return (
+                      <div key={item.label} style={{
+                        padding: '16px',
+                        borderRadius: '12px',
+                        background: 'var(--bg-glass)',
+                        border: '1px solid var(--border)',
+                        textAlign: 'center',
+                      }}>
+                        {cardContent}
+                      </div>
+                    );
+                  })}
                 </div>
+
+              {/* Room Gallery */}
+              {pg.roomPhotos && pg.roomPhotos.length > 0 && (
+                <div className="details-section">
+                  <h2 className="details-section-title">📸 Room Gallery</h2>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '12px',
+                    marginTop: '16px'
+                  }}>
+                    {pg.roomPhotos.map((photo, index) => (
+                      <div 
+                        key={index} 
+                        className="room-photo-container"
+                        onClick={() => setActivePhoto(photo)}
+                        style={{
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          aspectRatio: '4 / 3',
+                          border: '1px solid var(--border)',
+                          cursor: 'pointer',
+                          position: 'relative'
+                        }}
+                      >
+                        <img 
+                          src={photo} 
+                          alt={`Room view ${index + 1}`} 
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            transition: 'transform 0.3s ease'
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Amenities */}
               <div className="details-section">
@@ -144,7 +220,7 @@ export default function PGDetails({ pg, onBack }) {
                   <tbody>
                     <tr>
                       <th>Location</th>
-                      <td>{pg.location}</td>
+                      <td>{pg.locationDetail || pg.location}</td>
                     </tr>
                     <tr>
                       <th>Rooms</th>
@@ -197,6 +273,60 @@ export default function PGDetails({ pg, onBack }) {
       {showToast && (
         <div className="toast">
           {toastMsg}
+        </div>
+      )}
+
+      {activePhoto && (
+        <div 
+          onClick={() => setActivePhoto(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(10, 10, 10, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out',
+            animation: 'fadeIn 0.2s ease'
+          }}
+        >
+          <img 
+            src={activePhoto} 
+            alt="Room Gallery Zoomed" 
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              borderRadius: '12px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              objectFit: 'contain'
+            }}
+          />
+          <button 
+            onClick={() => setActivePhoto(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              color: 'white',
+              fontSize: '20px',
+              cursor: 'pointer',
+              width: '44px',
+              height: '44px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>

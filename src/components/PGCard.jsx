@@ -53,19 +53,19 @@ export default function PGCard({ pg, onViewDetails }) {
         <h3 className="pg-card-name">{pg.name}</h3>
         <div className="pg-card-location">
           <span>📍</span>
-          <span>{pg.location}</span>
+          <span>{pg.locationDetail || pg.location}</span>
           <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>•</span>
           <span>{pg.distance} from metro</span>
         </div>
 
         <div className="pg-card-amenities">
-          {pg.amenities.slice(0, 5).map(a => (
+          {pg.amenities.slice(0, 8).map(a => (
             <span key={a} className="amenity-pill">
               {amenityIcons[a] || '✓'} {a}
             </span>
           ))}
-          {pg.amenities.length > 5 && (
-            <span className="amenity-pill">+{pg.amenities.length - 5}</span>
+          {pg.amenities.length > 8 && (
+            <span className="amenity-pill">+{pg.amenities.length - 8}</span>
           )}
         </div>
 

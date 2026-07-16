@@ -18,10 +18,31 @@ export default function Home({ onViewDetails }) {
         const data = await getPGListings();
         if (data && data.length > 0) {
           // Normalize Supabase snake_case to camelCase
+          // Build a lookup from local mock data for fallback reviews and room photos
+          const localReviewsMap = {};
+          const localRoomPhotosMap = {};
+          pgData.forEach(p => { 
+            localReviewsMap[p.name] = p.reviews || [];
+            localRoomPhotosMap[p.name] = p.roomPhotos || [];
+          });
+
           const normalized = data.map(pg => ({
             id: pg.id,
             name: pg.name,
             location: pg.location,
+            locationDetail: pg.location_detail || pg.locationDetail || {
+              "Sunrise PG": "1st Cross, Marathahalli Main Road",
+              "Green Valley PG": "2nd Main Road, 4th Cross, Marathahalli 100ft Road",
+              "Urban Nest PG": "Kaverappa Layout, 3rd Cross, Marathahalli Village",
+              "Comfort Zone PG": "12th Cross, Kaverappa Layout",
+              "The Hub PG": "Spice Garden Layout, 1st Cross, near Marathahalli Bridge",
+              "Serenity Homes": "4th Cross, Green Glen Layout",
+              "Budget Stay PG": "AECS Layout, 2nd Main Road",
+              "Luxury Living Suites": "Outer Ring Road, Marathahalli",
+              "Zolo Marathahalli Nest": "Marathahalli Main Road",
+              "Stanza Living Sunrise Residency": "Kundalahalli Gate",
+              "Colive Green Meadows": "AECS Layout, Marathahalli",
+            }[pg.name] || pg.location,
             gender: pg.gender,
             rent: pg.rent,
             rating: pg.rating,
@@ -30,7 +51,8 @@ export default function Home({ onViewDetails }) {
             totalFloors: pg.total_floors,
             floorAvailability: pg.floor_availability || {},
             image: pg.image,
-            reviews: pg.pg_reviews || [],
+            reviews: (pg.pg_reviews && pg.pg_reviews.length > 0) ? pg.pg_reviews : (localReviewsMap[pg.name] || []),
+            roomPhotos: pg.room_photos || pg.roomPhotos || localRoomPhotosMap[pg.name] || [],
           }));
           setListings(normalized);
         }

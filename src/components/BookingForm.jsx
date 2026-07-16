@@ -47,6 +47,42 @@ export default function BookingForm({ pg }) {
     }
   }, [pg]);
 
+  const handleWhatsAppNotify = (overrideRef, existingWindow) => {
+    const formattedMobile = form.mobile.startsWith('91') ? form.mobile : `91${form.mobile}`;
+    const pgName = pg?.name || form.pgName;
+    const roomNum = selectedRoom?.roomNumber || form.roomNumber;
+    const roomType = form.roomType;
+    const rentVal = selectedRoom?.rent || pg?.rent || 0;
+    const checkIn = form.checkInDate;
+    const dur = form.duration;
+    const ref = overrideRef || bookingRef || bookingId;
+
+    const message = `Hello *${form.fullName}*! 👋
+
+Your booking request for *${pgName}* is confirmed! 🎉
+
+*Booking Details:*
+--------------------------------
+🏠 *PG:* ${pgName}
+🚪 *Room:* Room #${roomNum} (${roomType} Sharing)
+💰 *Monthly Rent:* ₹${rentVal.toLocaleString()}/mo
+📅 *Check-in Date:* ${checkIn}
+⏳ *Stay Duration:* ${dur} months
+📋 *Booking Reference:* ${ref}
+--------------------------------
+
+Thank you for choosing PGFinder! We are excited to welcome you home. 🏠`;
+
+    const encodedText = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedText}`;
+
+    if (existingWindow && !existingWindow.closed) {
+      existingWindow.location.href = whatsappUrl;
+    } else {
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const validate = () => {
     const errs = {};
     if (!form.fullName.trim()) errs.fullName = 'Full name is required';
@@ -54,8 +90,8 @@ export default function BookingForm({ pg }) {
     if (!form.mobile.trim()) errs.mobile = 'Mobile number is required';
     else if (!/^\d{10}$/.test(form.mobile.trim())) errs.mobile = 'Enter a valid 10-digit mobile number';
     if (!form.gender) errs.gender = 'Please select gender';
-    if (!form.aadhar.trim()) errs.aadhar = 'Aadhaar number is required';
-    else if (!/^\d{12}$/.test(form.aadhar.trim())) errs.aadhar = 'Enter a valid 12-digit Aadhaar number';
+    if (!form.photo) errs.photo = 'Aadhaar photo is required';
+    else if (!form.photo.type?.startsWith('image/')) errs.photo = 'Please upload a valid image file';
     if (!form.roomType) errs.roomType = 'Please select room type';
     if (!form.checkInDate) errs.checkInDate = 'Check-in date is required';
     else {
@@ -66,7 +102,6 @@ export default function BookingForm({ pg }) {
     }
     if (!form.duration) errs.duration = 'Duration of stay is required';
     if (!form.foodPreference) errs.foodPreference = 'Please select food preference';
-    if (form.photo && !form.photo.type?.startsWith('image/')) errs.photo = 'Please upload a valid image file';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -78,14 +113,49 @@ export default function BookingForm({ pg }) {
     setIsSubmitting(true);
     setSaveError('');
 
+    // Pre-open a blank window synchronously inside user click event to bypass popup blockers
+    let whatsappWindow = null;
+    try {
+      whatsappWindow = window.open('about:blank', '_blank');
+      if (whatsappWindow) {
+        whatsappWindow.document.write(`
+          <div style="font-family: 'Segoe UI', system-ui, sans-serif; text-align: center; margin-top: 80px; color: #333;">
+            <div style="font-size: 40px; margin-bottom: 12px; animation: pulse 1.5s infinite;">⏳</div>
+            <h3 style="margin: 0 0 8px;">Securing your booking...</h3>
+            <p style="color: #666; font-size: 14px; margin: 0;">Preparing your WhatsApp notification, please wait.</p>
+            <style>
+              @keyframes pulse {
+                0% { transform: scale(1); opacity: 0.8; }
+                50% { transform: scale(1.1); opacity: 1; }
+                100% { transform: scale(1); opacity: 0.8; }
+              }
+            </style>
+          </div>
+        `);
+      }
+    } catch (err) {
+      console.warn('Browser blocked popup pre-open:', err);
+    }
+
     const processBooking = async (bookingPayload) => {
+      let ref = '';
       try {
         // addBooking handles saving to local state AND Supabase, returning the booking reference/ID
-        const ref = await addBooking(bookingPayload);
-        setBookingRef(ref || 'BK-' + Math.floor(Math.random() * 100000));
-        setBookingId(ref);
+        ref = await addBooking(bookingPayload);
+        const finalRef = ref || 'BK-' + Math.floor(Math.random() * 100000);
+        setBookingRef(finalRef);
+        setBookingId(finalRef);
+        
+        // Auto-send WhatsApp message immediately after booking is confirmed using the pre-opened window
+        handleWhatsAppNotify(finalRef, whatsappWindow);
       } catch (err) {
         setSaveError('⚠️ Saved locally but failed to sync: ' + err.message);
+        const finalRef = 'BK-' + Math.floor(Math.random() * 100000);
+        setBookingRef(finalRef);
+        setBookingId(finalRef);
+        
+        // Auto-send WhatsApp message fallback using the pre-opened window
+        handleWhatsAppNotify(finalRef, whatsappWindow);
       }
       setSubmitted(true);
       setIsSubmitting(false);
@@ -149,7 +219,14 @@ export default function BookingForm({ pg }) {
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '12px' }}>
               Our team will contact you shortly to confirm your booking.
             </p>
-            <button className="btn btn-primary" onClick={closeBookingForm} style={{ marginTop: '24px', width: '100%' }}>
+            <button 
+              className="whatsapp-btn" 
+              onClick={handleWhatsAppNotify} 
+              style={{ marginTop: '24px', width: '100%' }}
+            >
+              💬 Notify via WhatsApp
+            </button>
+            <button className="btn btn-primary" onClick={closeBookingForm} style={{ marginTop: '12px', width: '100%' }}>
               ✅ Done
             </button>
           </div>
@@ -223,7 +300,7 @@ export default function BookingForm({ pg }) {
             {errors.gender && <span className="field-error">{errors.gender}</span>}
           </div>
 
-          {/* Row 4: PG Name & Room Number */}
+          {/* Row 4: PG Name & Aadhaar Photo */}
           <div className="booking-form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="bf-pg">Preferred PG</label>
@@ -231,24 +308,7 @@ export default function BookingForm({ pg }) {
                 style={{ background: 'rgba(249,115,22,0.06)', cursor: 'default' }} />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="bf-room">Selected Room</label>
-              <input id="bf-room" className="form-input" type="text"
-                value={form.roomNumber ? `Room ${form.roomNumber}` : 'Select from floor plan'}
-                readOnly style={{ background: 'rgba(249,115,22,0.06)', cursor: 'default' }} />
-            </div>
-          </div>
-
-          {/* Row 5: Aadhaar & Photo Upload */}
-          <div className="booking-form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="bf-aadhar">Aadhaar Number *</label>
-              <input id="bf-aadhar" className={`form-input ${errors.aadhar ? 'input-error' : ''}`}
-                type="text" placeholder="123412341234" value={form.aadhar} maxLength={12}
-                onChange={e => handleChange('aadhar', e.target.value.replace(/\D/g, ''))} />
-              {errors.aadhar && <span className="field-error">{errors.aadhar}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Upload Photo</label>
+              <label className="form-label">Aadhaar Photo *</label>
               <input type="file" accept="image/*" className={`form-input ${errors.photo ? 'input-error' : ''}`}
                 onChange={e => handlePhoto(e.target.files?.[0] || null)} />
               {errors.photo && <span className="field-error">{errors.photo}</span>}

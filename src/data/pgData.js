@@ -4,7 +4,7 @@ export const pgData = [
     id: 1,
     name: "Sunrise PG",
     location: "Marathahalli",
-    locationDetail: "Marathahalli Main Road",
+    locationDetail: "1st Cross, Marathahalli Main Road",
     gender: "Male",
     sharing: 1,
     rent: 8500,
@@ -16,7 +16,7 @@ export const pgData = [
     lift: false,
     wifi: true,
     foodMenu: "Veg only - Breakfast, Lunch, Dinner",
-    amenities: ["WiFi", "Lift", "Generator", "Food", "Gym", "Laundry"],
+    amenities: ["WiFi", "Lift", "Generator", "Food", "Gym", "Laundry", "CCTV", "Hot Water", "Security", "Power Backup", "Study Table", "Fridge", "Water Purifier"],
     totalFloors: 5,
     floorAvailability: { "1": 0, "2": 4, "3": 2, "4": 1, "5": 0 },
     totalRooms: 15,
@@ -24,13 +24,16 @@ export const pgData = [
     reviews: [
       { id: 1, author: "Rahul M.", rating: 5, text: "Amazing PG! Super clean and the staff is very helpful. WiFi is blazing fast.", date: "2 weeks ago", avatar: "RM" },
       { id: 2, author: "Kiran S.", rating: 4, text: "Good food, quiet environment. Perfect for working professionals.", date: "1 month ago", avatar: "KS" },
-    ]
+      { id: 3, author: "Amit P.", rating: 5, text: "The rooms are spacious and well-ventilated. Maintenance is prompt and the laundry service is excellent.", date: "3 weeks ago", avatar: "AP" },
+      { id: 4, author: "Vikash T.", rating: 4, text: "Decent place with good connectivity. Gym has basic equipment and is clean.", date: "2 months ago", avatar: "VT" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
   {
     id: 2,
     name: "Green Valley PG",
     location: "Marathahalli",
-    locationDetail: "Marathahalli 100ft Road",
+    locationDetail: "2nd Main Road, 4th Cross, Marathahalli 100ft Road",
     gender: "Female",
     sharing: 2,
     rent: 9000,
@@ -42,7 +45,7 @@ export const pgData = [
     lift: false,
     wifi: false,
     foodMenu: "North & South Indian - All meals",
-    amenities: ["WiFi", "Food", "Laundry", "CCTV", "Hot Water"],
+    amenities: ["WiFi", "Food", "Laundry", "CCTV", "Hot Water", "Housekeeping", "Security", "TV", "Power Backup", "Study Table", "Attached Bath"],
     totalFloors: 5,
     floorAvailability: { "1": 1, "2": 0, "3": 3, "4": 2, "5": 0 },
     totalRooms: 15,
@@ -50,13 +53,16 @@ export const pgData = [
     reviews: [
       { id: 1, author: "Priya L.", rating: 5, text: "Best PG for women in Marathahalli. Very safe and comfortable.", date: "3 days ago", avatar: "PL" },
       { id: 2, author: "Sneha R.", rating: 4, text: "Great food and friendly atmosphere. Highly recommend!", date: "2 weeks ago", avatar: "SR" },
-    ]
+      { id: 3, author: "Anjali M.", rating: 5, text: "Highly secure with CCTV and guard. The warden is very polite. Homely food.", date: "1 month ago", avatar: "AM" },
+      { id: 4, author: "Divya N.", rating: 4, text: "Good internet speed and clean housekeeping. Washing machine works fine.", date: "2 months ago", avatar: "DN" }
+    ],
+    roomPhotos: ["/images/rooms/female_room_1.png", "/images/rooms/female_room_2.png", "/images/rooms/female_room_3.png"]
   },
   {
     id: 3,
     name: "Urban Nest PG",
     location: "Marathahalli",
-    locationDetail: "Marathahalli Village",
+    locationDetail: "Kaverappa Layout, 3rd Cross, Marathahalli Village",
     gender: "Co-Live",
     sharing: 2,
     rent: 7500,
@@ -68,20 +74,22 @@ export const pgData = [
     lift: false,
     wifi: true,
     foodMenu: "Veg & Non-Veg - Lunch & Dinner",
-    amenities: ["WiFi", "Generator", "Parking", "Gym"],
+    amenities: ["WiFi", "Generator", "Parking", "Gym", "Food", "CCTV", "Hot Water", "Security", "Fridge", "Study Table"],
     totalFloors: 3,
     floorAvailability: { "1": 2, "2": 1, "3": 3 },
     totalRooms: 12,
     image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80",
     reviews: [
       { id: 1, author: "Arjun K.", rating: 4, text: "Good location, close to the tech park. Gym is excellent.", date: "1 week ago", avatar: "AK" },
+      { id: 2, author: "Sunita G.", rating: 5, text: "Perfect co-living space. Great community, neat rooms, and very near to main road.", date: "3 weeks ago", avatar: "SG" },
+      { id: 3, author: "Pranav S.", rating: 4, text: "Nice vibe. Power backup is reliable and parking space is ample.", date: "1 month ago", avatar: "PS" }
     ]
   },
   {
     id: 4,
     name: "Comfort Zone PG",
     location: "Marathahalli",
-    locationDetail: "Kaverappa Layout",
+    locationDetail: "12th Cross, Kaverappa Layout",
     gender: "Male",
     sharing: 2,
     rent: 9326,
@@ -93,7 +101,7 @@ export const pgData = [
     lift: false,
     wifi: true,
     foodMenu: "Veg only - Breakfast & Dinner",
-    amenities: ["WiFi", "Lift", "Food", "Hot Water", "Laundry", "CCTV", "AC"],
+    amenities: ["WiFi", "Lift", "Food", "Hot Water", "Laundry", "CCTV", "AC", "Parking", "TV", "Security", "Power Backup", "Housekeeping", "Study Table", "Fridge", "Water Purifier", "Attached Bath", "Microwave"],
     totalFloors: 4,
     floorAvailability: { "1": 0, "2": 0, "3": 1, "4": 2 },
     totalRooms: 32,
@@ -101,13 +109,16 @@ export const pgData = [
     reviews: [
       { id: 1, author: "Meera V.", rating: 5, text: "Premium PG with top-notch facilities. Worth every rupee!", date: "5 days ago", avatar: "MV" },
       { id: 2, author: "Anita J.", rating: 5, text: "The AC rooms are amazing! Staff is very cooperative.", date: "3 weeks ago", avatar: "AJ" },
-    ]
+      { id: 3, author: "Harish R.", rating: 4, text: "Superb daily housekeeping and clean toilets. The generator backup is instant.", date: "1 month ago", avatar: "HR" },
+      { id: 4, author: "Karthik D.", rating: 5, text: "AC works perfectly. The lift is fast and food is above average.", date: "2 months ago", avatar: "KD" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
   {
     id: 5,
     name: "The Hub PG",
     location: "Marathahalli",
-    locationDetail: "Marathahalli Bridge",
+    locationDetail: "Spice Garden Layout, 1st Cross, near Marathahalli Bridge",
     gender: "Male",
     sharing: 4,
     rent: 5322,
@@ -119,20 +130,23 @@ export const pgData = [
     lift: false,
     wifi: true,
     foodMenu: "North & South Indian - All meals",
-    amenities: ["WiFi", "Gym", "Food", "Laundry", "Generator"],
+    amenities: ["WiFi", "Gym", "Food", "Laundry", "Generator", "CCTV", "Hot Water", "Parking", "Security", "Study Table", "Fridge", "Ironing Service"],
     totalFloors: 3,
     floorAvailability: { "1": 3, "2": 2, "3": 0 },
     totalRooms: 24,
     image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&q=80",
     reviews: [
       { id: 1, author: "Dev P.", rating: 5, text: "Coed PG done right. Great community vibe and awesome facilities.", date: "1 month ago", avatar: "DP" },
-    ]
+      { id: 2, author: "Siddharth B.", rating: 4, text: "Very close to the bus stop. Ideal location for commuters. Decent food.", date: "2 weeks ago", avatar: "SB" },
+      { id: 3, author: "Neha C.", rating: 5, text: "Super clean rooms, friendly staff, and high-speed internet. Love the stay here.", date: "1 month ago", avatar: "NC" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
   {
     id: 6,
     name: "Serenity Homes",
     location: "Marathahalli",
-    locationDetail: "Green Glen Layout",
+    locationDetail: "4th Cross, Green Glen Layout",
     gender: "Male",
     sharing: 2,
     rent: 12297,
@@ -144,14 +158,17 @@ export const pgData = [
     lift: false,
     wifi: true,
     foodMenu: "North & South Indian - All meals",
-    amenities: ["WiFi", "AC", "Lift", "Food", "Gym", "CCTV", "Parking"],
+    amenities: ["WiFi", "AC", "Lift", "Food", "Gym", "CCTV", "Parking", "Hot Water", "Laundry", "Security", "Power Backup", "Swimming Pool", "Housekeeping", "Study Table", "Fridge", "Attached Bath", "Water Purifier", "Microwave", "Ironing Service"],
     totalFloors: 5,
     floorAvailability: { "1": 0, "2": 1, "3": 0, "4": 2, "5": 0 },
     totalRooms: 30,
     image: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=600&q=80",
     reviews: [
       { id: 1, author: "Vikram N.", rating: 5, text: "Closest PG to Bagmane Tech Park. Excellent amenities and peaceful environment.", date: "2 days ago", avatar: "VN" },
-    ]
+      { id: 2, author: "Rohan J.", rating: 4, text: "Clean and peaceful. High-speed WiFi makes WFH very easy.", date: "3 weeks ago", avatar: "RJ" },
+      { id: 3, author: "Anupama K.", rating: 5, text: "Beautiful interiors, highly cooperative caretakers, and very peaceful colony.", date: "1 month ago", avatar: "AK" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
 
   // ─── Dataset from spreadsheet ───────────────────────────────────────────
@@ -199,7 +216,12 @@ export const pgData = [
     floorAvailability: { "1": 1, "2": 1, "3": 1, "4": 1 },
     totalRooms: 12,
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80",
-    reviews: []
+    reviews: [
+      { id: 1, author: "Rahul V.", rating: 4, text: "Very modern PG with high security. The laundry system is really useful.", date: "1 week ago", avatar: "RV" },
+      { id: 2, author: "Manoj K.", rating: 4, text: "Excellent WiFi and cleaning staff. Highly recommended for bachelors.", date: "3 weeks ago", avatar: "MK" },
+      { id: 3, author: "Suresh P.", rating: 5, text: "Perfect stay. Peaceful location and well-maintained rooms.", date: "1 month ago", avatar: "SP" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
   {
     id: 9,
@@ -245,7 +267,12 @@ export const pgData = [
     floorAvailability: { "1": 2, "2": 3, "3": 3 },
     totalRooms: 24,
     image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&q=80",
-    reviews: []
+    reviews: [
+      { id: 1, author: "Ganesh D.", rating: 4, text: "Affordable stay near Marathahalli bridge. Food is very decent.", date: "2 weeks ago", avatar: "GD" },
+      { id: 2, author: "Nikhil S.", rating: 4, text: "Perfect for budget travelers and students. High-speed internet is a plus.", date: "1 month ago", avatar: "NS" },
+      { id: 3, author: "Vijay R.", rating: 4, text: "Clean corridors and helpful care-taker. Decent value for money.", date: "2 months ago", avatar: "VR" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
   {
     id: 11,
@@ -268,7 +295,12 @@ export const pgData = [
     floorAvailability: { "1": 1, "2": 2, "3": 2, "4": 3 },
     totalRooms: 32,
     image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&q=80",
-    reviews: []
+    reviews: [
+      { id: 1, author: "Aman T.", rating: 5, text: "Premium facilities. Gym is well-equipped and WiFi never goes down.", date: "1 week ago", avatar: "AT" },
+      { id: 2, author: "Sameer N.", rating: 4, text: "Clean and tidy bathrooms. Food menu is vegetarian and healthy.", date: "3 weeks ago", avatar: "SN" },
+      { id: 3, author: "Deepak G.", rating: 5, text: "Staff are friendly and security is top-notch. Recommend it highly.", date: "1 month ago", avatar: "DG" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
   {
     id: 12,
@@ -314,7 +346,12 @@ export const pgData = [
     floorAvailability: { "1": 1, "2": 1, "3": 1, "4": 2, "5": 1 },
     totalRooms: 30,
     image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80",
-    reviews: []
+    reviews: [
+      { id: 1, author: "Yash W.", rating: 4, text: "Nice facilities, gym is decent. Staff resolve complaints quickly.", date: "5 days ago", avatar: "YW" },
+      { id: 2, author: "Ravi S.", rating: 4, text: "Quiet location. Food is tasty and the rooms are cleaned daily.", date: "2 weeks ago", avatar: "RS" },
+      { id: 3, author: "Tarun M.", rating: 5, text: "Very friendly environment. Clean beds and regular maintenance.", date: "1 month ago", avatar: "TM" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
   {
     id: 14,
@@ -337,7 +374,8 @@ export const pgData = [
     floorAvailability: { "1": 1, "2": 2, "3": 1 },
     totalRooms: 12,
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80",
-    reviews: []
+    reviews: [],
+    roomPhotos: ["/images/rooms/female_room_1.png", "/images/rooms/female_room_2.png", "/images/rooms/female_room_3.png"]
   },
   {
     id: 15,
@@ -360,7 +398,8 @@ export const pgData = [
     floorAvailability: { "1": 1, "2": 2, "3": 1, "4": 2, "5": 1 },
     totalRooms: 35,
     image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80",
-    reviews: []
+    reviews: [],
+    roomPhotos: ["/images/rooms/female_room_1.png", "/images/rooms/female_room_2.png", "/images/rooms/female_room_3.png"]
   },
   {
     id: 16,
@@ -429,7 +468,8 @@ export const pgData = [
     floorAvailability: { "1": 1, "2": 1, "3": 1, "4": 1, "5": 1 },
     totalRooms: 15,
     image: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=600&q=80",
-    reviews: []
+    reviews: [],
+    roomPhotos: ["/images/rooms/female_room_1.png", "/images/rooms/female_room_2.png", "/images/rooms/female_room_3.png"]
   },
   {
     id: 19,
@@ -452,7 +492,12 @@ export const pgData = [
     floorAvailability: { "1": 2, "2": 3, "3": 3 },
     totalRooms: 24,
     image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80",
-    reviews: []
+    reviews: [
+      { id: 1, author: "Karan B.", rating: 4, text: "Clean and peaceful. High-speed WiFi is very reliable.", date: "3 days ago", avatar: "KB" },
+      { id: 2, author: "Rajesh L.", rating: 4, text: "Friendly caretakers and quick service response. Safe location.", date: "2 weeks ago", avatar: "RL" },
+      { id: 3, author: "Abhishek K.", rating: 4, text: "Good food options and well-maintained rooms. Easy check-in.", date: "1 month ago", avatar: "AK" }
+    ],
+    roomPhotos: ["/images/rooms/male_room_1.png", "/images/rooms/male_room_2.png", "/images/rooms/male_room_3.png"]
   },
   {
     id: 20,
@@ -475,7 +520,8 @@ export const pgData = [
     floorAvailability: { "1": 1, "2": 4, "3": 4 },
     totalRooms: 9,
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80",
-    reviews: []
+    reviews: [],
+    roomPhotos: ["/images/rooms/female_room_1.png", "/images/rooms/female_room_2.png", "/images/rooms/female_room_3.png"]
   },
   {
     id: 21,
@@ -513,6 +559,17 @@ export const amenityIcons = {
   "Hot Water": "🚿",
   AC: "❄️",
   Parking: "🅿️",
+  TV: "📺",
+  Housekeeping: "🧹",
+  Security: "🔒",
+  "Power Backup": "🔋",
+  "Swimming Pool": "🏊",
+  "Study Table": "📝",
+  "Fridge": "🧊",
+  "Water Purifier": "💧",
+  "Attached Bath": "🚽",
+  "Ironing Service": "👔",
+  "Microwave": "🍳",
 };
 
 // ─── Search suggestion helpers ─────────────────────────────────────────────────

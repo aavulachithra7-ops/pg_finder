@@ -5,15 +5,6 @@ export default function WeeklyMenu() {
 
   return (
     <div className="weekly-menu horizontal">
-      {/* Meal Timings (compact) */}
-      <div className="meal-timings-compact">
-        {Object.values(mealTimings).map(meal => (
-          <div key={meal.label} className="meal-timing-compact">
-            <div className="meal-icon">{meal.icon}</div>
-            <div className="meal-label">{meal.label}</div>
-          </div>
-        ))}
-      </div>
 
       {/* Horizontal Menu Table: days across columns */}
       <div className="menu-table-wrapper horizontal">
