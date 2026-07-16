@@ -166,3 +166,47 @@ values
   ('Budget Stay PG', 'Marathahalli', 'Male', 4500, 3.8, '2.5 km', ARRAY['WiFi','Food','Hot Water'], 3, '{"1":2,"2":5,"3":3}', 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80'),
   ('Luxury Living Suites', 'Marathahalli', 'Co-Live', 12500, 4.9, '0.4 km', ARRAY['WiFi','AC','Lift','Food','Gym','CCTV','Parking','Laundry'], 7, '{"1":0,"2":0,"3":0,"4":1,"5":0,"6":1,"7":1}', 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=600&q=80')
 on conflict do nothing;
+
+
+-- =============================================
+-- 6. OWNERS TABLE
+-- =============================================
+create table if not exists owners (
+  id bigserial primary key,
+  pg_name text unique not null,
+  password_hash text not null,
+  owner_name text not null,
+  email text unique not null,
+  phone_number text,
+  created_date timestamptz default now(),
+  last_login timestamptz
+);
+
+alter table owners enable row level security;
+create policy "Anyone can read owners" on owners for select using (true);
+create policy "Anyone can insert owners" on owners for insert with check (true);
+create policy "Owners can update their own profile" on owners for update using (true);
+
+
+-- =============================================
+-- 7. ROOMS TABLE
+-- =============================================
+create table if not exists rooms (
+  id bigserial primary key,
+  pg_id bigint references pg_listings(id) on delete cascade,
+  room_number integer not null,
+  floor integer not null,
+  sharing text not null check (sharing in ('single', 'double', 'triple', 'four')),
+  rent integer not null,
+  status text not null check (status in ('available', 'booked', 'maintenance')),
+  has_attached_bathroom boolean default true,
+  is_ac boolean default false,
+  has_balcony boolean default false,
+  unique(pg_id, room_number)
+);
+
+alter table rooms enable row level security;
+create policy "Anyone can read rooms" on rooms for select using (true);
+create policy "Anyone can modify rooms" on rooms for all using (true);
+
+

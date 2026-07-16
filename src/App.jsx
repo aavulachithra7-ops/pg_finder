@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import PGDetails from './pages/PGDetails';
 import Login from './pages/Login';
 import About from './pages/About';
+import OwnerDashboard from './pages/OwnerDashboard';
 import { onAuthChange, signOut } from './lib/api';
 import './index.css';
 
@@ -28,7 +29,25 @@ export default function App() {
           isGoogle: u.app_metadata?.provider === 'google',
         });
       } else {
-        setUser(null);
+        // If there's an owner session saved in localStorage, restore it!
+        const ownerProfile = localStorage.getItem('owner_profile');
+        if (ownerProfile) {
+          try {
+            const data = JSON.parse(ownerProfile);
+            setUser({
+              id: data.pg_name,
+              email: data.email,
+              name: data.owner_name,
+              role: 'owner',
+              isOwnerPortal: true
+            });
+            setCurrentPage('owner-dashboard');
+          } catch (e) {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
       }
       setAuthReady(true);
     });
@@ -52,6 +71,10 @@ export default function App() {
     } catch (e) {
       console.error('Logout error:', e);
     }
+    // Clear both tenant and owner sessions
+    localStorage.removeItem('owner_token');
+    localStorage.removeItem('owner_pg_name');
+    localStorage.removeItem('owner_profile');
     setUser(null);
     handleNavigate('home');
   };
@@ -68,7 +91,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const showFooter = currentPage !== 'login';
+  const showFooter = currentPage !== 'login' && currentPage !== 'owner-dashboard';
 
   // Don't render until we know the auth state
   if (!authReady) {
@@ -92,6 +115,13 @@ export default function App() {
           {currentPage === 'details' && selectedPG && <PGDetails pg={selectedPG} onBack={handleBack} />}
           {currentPage === 'login' && <Login onNavigate={handleNavigate} onLogin={handleLogin} />}
           {currentPage === 'about' && <About onNavigate={handleNavigate} />}
+          {currentPage === 'owner-dashboard' && (
+            user?.role === 'owner' ? (
+              <OwnerDashboard onNavigate={handleNavigate} onLogout={handleLogout} />
+            ) : (
+              <Login onNavigate={handleNavigate} onLogin={handleLogin} />
+            )
+          )}
         </main>
 
         {showFooter && <Footer onNavigate={handleNavigate} />}

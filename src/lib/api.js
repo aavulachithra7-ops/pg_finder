@@ -872,3 +872,316 @@ export async function addReview({ pgId, userId, rating, text, author }) {
   if (error) throw error;
   return data;
 }
+
+// ─── OWNER DASHBOARD & AUTHENTICATION ──────────────────────────────────────────
+
+const BACKEND_URL = 'http://localhost:8000';
+
+function getOwnerHeaders() {
+  const token = localStorage.getItem('owner_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+}
+
+// Initialize mock owners in local storage if not already there
+function initMockOwners() {
+  const mockOwners = localStorage.getItem('pg_mock_owners');
+  if (!mockOwners) {
+    // We store simple plaintext password for mock testing, or mock hashed
+    localStorage.setItem('pg_mock_owners', JSON.stringify([
+      { pg_name: 'Comfort Zone PG', password: 'password123', owner_name: 'John Doe', email: 'comfortzone@example.com', phone_number: '9876543210' },
+      { pg_name: 'Green Valley PG', password: 'password123', owner_name: 'Jane Smith', email: 'greenvalley@example.com', phone_number: '9876543211' }
+    ]));
+  }
+}
+
+/** Authenticate owner (dual-mode: FastAPI with localStorage mock fallback) */
+export async function loginOwner({ pgName, password }) {
+  initMockOwners();
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/owner/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pg_name: pgName, password })
+    });
+    
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.detail || 'Login failed.');
+    }
+    
+    const data = await response.json();
+    localStorage.setItem('owner_token', data.token);
+    localStorage.setItem('owner_pg_name', data.pg_name);
+    localStorage.setItem('owner_profile', JSON.stringify(data));
+    return data;
+  } catch (err) {
+    // If backend is down, use local storage fallback
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      console.warn('⚠️ FastAPI backend not running. Falling back to local storage mock for Owner Login.');
+      const owners = JSON.parse(localStorage.getItem('pg_mock_owners'));
+      const matched = owners.find(o => o.pg_name.toLowerCase() === pgName.toLowerCase());
+      
+      if (!matched) {
+        throw new Error('PG not found.');
+      }
+      if (matched.password !== password) {
+        throw new Error('Invalid PG Name or Password.');
+      }
+      
+      const mockResult = {
+        token: 'mock-jwt-owner-token',
+        pg_name: matched.pg_name,
+        owner_name: matched.owner_name,
+        email: matched.email,
+        isOfflineMock: true
+      };
+      
+      localStorage.setItem('owner_token', mockResult.token);
+      localStorage.setItem('owner_pg_name', mockResult.pg_name);
+      localStorage.setItem('owner_profile', JSON.stringify(mockResult));
+      return mockResult;
+    }
+    throw err;
+  }
+}
+
+/** Fetch Owner dashboard data (PG, Rooms, Bookings) */
+export async function getOwnerDashboardData() {
+  const pgName = localStorage.getItem('owner_pg_name');
+  if (!pgName) throw new Error('No owner session found.');
+  
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/owner/dashboard`, {
+      headers: getOwnerHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to load dashboard data from backend.');
+    return await response.json();
+  } catch (err) {
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || localStorage.getItem('owner_token') === 'mock-jwt-owner-token') {
+      console.warn('⚠️ Offline fallback: Fetching dashboard data from mock database');
+      
+      // Get PG details
+      const listings = getStorageItem(MOCK_LISTINGS_KEY, pgData);
+      let pg = listings.find(l => l.name.toLowerCase() === pgName.toLowerCase());
+      
+      if (!pg) {
+        // Create mock PG listing
+        pg = {
+          id: Math.floor(Math.random() * 1000) + 10,
+          name: pgName,
+          location: 'Marathahalli',
+          gender: 'Co-Live',
+          rent: 9500,
+          rating: 4.8,
+          distance: '0.4 km',
+          amenities: ['WiFi', 'Food', 'Laundry', 'CCTV', 'Lift'],
+          total_floors: 4,
+          image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&q=80'
+        };
+        listings.push(pg);
+        setStorageItem(MOCK_LISTINGS_KEY, listings);
+      }
+      
+      // Get or Generate Rooms
+      let roomsByPG = getStorageItem('roomsByPG', {});
+      if (!roomsByPG[pg.id]) {
+        // import modules on the fly or duplicate generateRooms logic
+        const sharingTypes = ['single', 'double', 'triple', 'four'];
+        const prices = { single: 10000, double: 8000, triple: 6500, four: 5000 };
+        const mockRooms = [];
+        for (let floor = 1; floor <= (pg.total_floors || 4); floor++) {
+          for (let rNum = 1; rNum <= 4; rNum++) {
+            const roomNumber = floor * 100 + rNum;
+            const sharing = sharingTypes[(rNum - 1) % sharingTypes.length];
+            const rent = pg.rent;
+            const seed = (roomNumber * 7 + floor * 3) % 10;
+            const status = seed < 5 ? 'available' : (seed < 8 ? 'booked' : 'maintenance');
+            
+            mockRooms.push({
+              room_number: roomNumber,
+              roomNumber: roomNumber,
+              floor,
+              sharing,
+              rent: sharing === 'double' ? rent : prices[sharing],
+              status,
+              has_attached_bathroom: rNum <= 2,
+              is_ac: rNum === 1 || rNum === 4,
+              has_balcony: rNum === 4
+            });
+          }
+        }
+        roomsByPG[pg.id] = mockRooms;
+        setStorageItem('roomsByPG', roomsByPG);
+      }
+      
+      // Get Bookings
+      const bookings = getStorageItem('pgBookings', []);
+      const pgBookings = bookings.filter(b => b.pgId === pg.id || b.pg_id === pg.id);
+      
+      return {
+        pg,
+        rooms: roomsByPG[pg.id],
+        bookings: pgBookings,
+        isOfflineMock: true
+      };
+    }
+    throw err;
+  }
+}
+
+/** Update PG Details */
+export async function updateOwnerPG(updatedFields) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/owner/pg`, {
+      method: 'PUT',
+      headers: getOwnerHeaders(),
+      body: JSON.stringify(updatedFields)
+    });
+    if (!response.ok) throw new Error('Failed to update PG details.');
+    return await response.json();
+  } catch (err) {
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || localStorage.getItem('owner_token') === 'mock-jwt-owner-token') {
+      const pgName = localStorage.getItem('owner_pg_name');
+      const listings = getStorageItem(MOCK_LISTINGS_KEY, pgData);
+      const idx = listings.findIndex(l => l.name.toLowerCase() === pgName.toLowerCase());
+      if (idx === -1) throw new Error('PG not found.');
+      
+      listings[idx] = { ...listings[idx], ...updatedFields };
+      setStorageItem(MOCK_LISTINGS_KEY, listings);
+      return { message: 'Updated offline', data: listings[idx] };
+    }
+    throw err;
+  }
+}
+
+/** Manage Owner Rooms CRUD */
+export async function manageOwnerRoom(action, roomData) {
+  const pgName = localStorage.getItem('owner_pg_name');
+  
+  try {
+    let response;
+    if (action === 'add') {
+      response = await fetch(`${BACKEND_URL}/api/owner/rooms`, {
+        method: 'POST',
+        headers: getOwnerHeaders(),
+        body: JSON.stringify(roomData)
+      });
+    } else if (action === 'edit') {
+      response = await fetch(`${BACKEND_URL}/api/owner/rooms/${roomData.room_number}`, {
+        method: 'PUT',
+        headers: getOwnerHeaders(),
+        body: JSON.stringify(roomData)
+      });
+    } else if (action === 'delete') {
+      response = await fetch(`${BACKEND_URL}/api/owner/rooms/${roomData.room_number}`, {
+        method: 'DELETE',
+        headers: getOwnerHeaders()
+      });
+    }
+    
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || `Failed to ${action} room.`);
+    }
+    return await response.json();
+  } catch (err) {
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || localStorage.getItem('owner_token') === 'mock-jwt-owner-token') {
+      const listings = getStorageItem(MOCK_LISTINGS_KEY, pgData);
+      const pg = listings.find(l => l.name.toLowerCase() === pgName.toLowerCase());
+      if (!pg) throw new Error('PG not found.');
+      
+      let roomsByPG = getStorageItem('roomsByPG', {});
+      let rooms = roomsByPG[pg.id] || [];
+      
+      if (action === 'add') {
+        if (rooms.some(r => r.room_number === roomData.room_number)) {
+          throw new Error(`Room ${roomData.room_number} already exists.`);
+        }
+        const newRoom = {
+          ...roomData,
+          roomNumber: roomData.room_number,
+        };
+        rooms.push(newRoom);
+      } else if (action === 'edit') {
+        rooms = rooms.map(r => r.room_number === roomData.room_number ? { ...r, ...roomData, roomNumber: roomData.room_number } : r);
+      } else if (action === 'delete') {
+        rooms = rooms.filter(r => r.room_number !== roomData.room_number);
+      }
+      
+      roomsByPG[pg.id] = rooms;
+      setStorageItem('roomsByPG', roomsByPG);
+      return { message: `${action} complete` };
+    }
+    throw err;
+  }
+}
+
+/** Update booking status */
+export async function updateBookingStatus(bookingId, status) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/owner/bookings/${bookingId}/status`, {
+      method: 'PUT',
+      headers: getOwnerHeaders(),
+      body: JSON.stringify({ status })
+    });
+    if (!response.ok) throw new Error('Failed to update booking status.');
+    return await response.json();
+  } catch (err) {
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || localStorage.getItem('owner_token') === 'mock-jwt-owner-token') {
+      const bookings = getStorageItem('pgBookings', []);
+      const idx = bookings.findIndex(b => String(b.id || b.bookingId) === String(bookingId));
+      if (idx === -1) throw new Error('Booking not found.');
+      
+      bookings[idx].status = status;
+      setStorageItem('pgBookings', bookings);
+      
+      // Auto book room if confirmed
+      if (status === 'confirmed' && bookings[idx].roomNumber) {
+        const roomsByPG = getStorageItem('roomsByPG', {});
+        const pgId = bookings[idx].pgId || bookings[idx].pg_id;
+        if (pgId && roomsByPG[pgId]) {
+          roomsByPG[pgId] = roomsByPG[pgId].map(r => r.room_number === bookings[idx].roomNumber ? { ...r, status: 'booked' } : r);
+          setStorageItem('roomsByPG', roomsByPG);
+        }
+      }
+      return { message: 'Booking updated offline' };
+    }
+    throw err;
+  }
+}
+
+/** Update Owner Password */
+export async function changeOwnerPassword({ oldPassword, newPassword }) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/owner/change-password`, {
+      method: 'POST',
+      headers: getOwnerHeaders(),
+      body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Password change failed.');
+    }
+    return await response.json();
+  } catch (err) {
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || localStorage.getItem('owner_token') === 'mock-jwt-owner-token') {
+      const pgName = localStorage.getItem('owner_pg_name');
+      const owners = JSON.parse(localStorage.getItem('pg_mock_owners'));
+      const idx = owners.findIndex(o => o.pg_name.toLowerCase() === pgName.toLowerCase());
+      if (idx === -1) throw new Error('Owner not found.');
+      
+      if (owners[idx].password !== oldPassword) {
+        throw new Error('Invalid old password.');
+      }
+      
+      owners[idx].password = newPassword;
+      localStorage.setItem('pg_mock_owners', JSON.stringify(owners));
+      return { message: 'Password changed offline successfully' };
+    }
+    throw err;
+  }
+}
+
