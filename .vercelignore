@@ -1,0 +1,4 @@
+# Ignore local backend folder to prevent Vercel from trying to build Python functions
+backend/
+supabase_schema.sql
+replace_colors.ps1
